@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Переміщення об'єктів</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
+
+    /* Стиль для квадратного об'єкта */
+    .draggable-rectangle {
+      width: 100px;
+      height: 100px;
+      background-color: rgba(255, 0, 0, 0.5);  /* Червоний, напівпрозорий */
+      border: 2px solid #333;
+      position: absolute;
+      cursor: pointer;
+    }
+
+    /* Стиль для кругового об'єкта */
+    .draggable-circle {
+      width: 100px;
+      height: 100px;
+      background-color: rgba(0, 255, 0, 0.5);  /* Зелений, напівпрозорий */
+      border-radius: 50%;
+      position: absolute;
+      cursor: pointer;
+    }
+
+    /* Стиль для трикутного об'єкта */
+    .draggable-triangle {
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 100px solid rgba(0, 0, 255, 0.5); /* Синій, напівпрозорий */
+      position: absolute;
+      cursor: pointer;
+    }
+
+    /* Початкові позиції об'єктів */
+    .draggable1 {
+      top: 50px;
+      left: 50px;
+    }
+
+    .draggable2 {
+      top: 200px;
+      left: 50px;
+    }
+
+    .draggable3 {
+      top: 350px;
+      left: 50px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="draggable draggable-rectangle draggable1"></div>
+  <div class="draggable draggable-circle draggable2"></div>
+  <div class="draggable draggable-triangle draggable3"></div>
+
+  <script>
+    // Функція для ініціалізації переміщення елементів
+    function makeDraggable(element) {
+      let isDragging = false;
+      let offsetX, offsetY;
+
+      // Клік на елемент
+      element.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - element.getBoundingClientRect().left;
+        offsetY = e.clientY - element.getBoundingClientRect().top;
+        element.style.transition = 'none'; // Вимикаємо анімацію під час переміщення
+      });
+
+      // Переміщення елементу
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          const x = e.clientX - offsetX;
+          const y = e.clientY - offsetY;
+          element.style.left = `${x}px`;
+          element.style.top = `${y}px`;
+        }
+      });
+
+      // Відпускання елементу
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        element.style.transition = 'top 0.2s ease, left 0.2s ease'; // Додаємо анімацію
+      });
+    }
+
+    // Ініціалізація для трьох елементів
+    const draggableElements = document.querySelectorAll('.draggable');
+    draggableElements.forEach(makeDraggable);
+  </script>
+
+</body>
+</html>
