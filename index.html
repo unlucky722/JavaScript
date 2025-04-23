@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Фігури з повною фізикою</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+
+    .draggable-rectangle,
+    .draggable-circle,
+    .draggable-triangle {
+      position: absolute;
+      cursor: pointer;
+    }
+
+    .draggable-rectangle {
+      width: 100px;
+      height: 100px;
+      background-color: rgba(255, 0, 0, 0.5);
+    }
+
+    .draggable-circle {
+      width: 100px;
+      height: 100px;
+      background-color: rgba(0, 255, 0, 0.5);
+      border-radius: 50%;
+    }
+
+    .draggable-triangle {
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 100px solid rgba(0, 0, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="draggable draggable-rectangle"></div>
+  <div class="draggable draggable-circle"></div>
+  <div class="draggable draggable-triangle"></div>
+
+  <script>
+    // Клас для фігур з повною фізикою
+    class DraggableObject {
+      constructor(element, mass) {
+        this.element = element;
+        this.mass = mass;  // Маса фігури
+        this.x = parseInt(element.style.left || 0);
+        this.y = parseInt(element.style.top || 0);
+        this.vx = 0;  // Початкова швидкість по осі X
+        this.vy = 0;  // Початкова швидкість по осі Y
+        this.ax = 0;  // Прискорення по осі X
+        this.ay = 0;  // Прискорення по осі Y
+        this.gravity = 0.5;  // Сила тяжіння
+        this.friction = 0.98; // Тертя
+        this.elasticity = 0.7;  // Еластичність (відскок)
+        this.width = element.offsetWidth;
+        this.height = element.offsetHeight;
+
+        // Створення та ініціалізація фізики
+        this.updatePosition();
+      }
+
+      // Оновлення положення фігури
+      updatePosition() {
+        this.element.style.left = this.x + 'px';
+        this.element.style.top = this.y + 'px';
+      }
+
+      // Оновлення фізики
+      applyPhysics() {
+        // Гравітація
+        this.ay = this.gravity;
+
+        // Розрахунок прискорення
+        this.vx += this.ax;
+        this.vy += this.ay;
+
+        // Тертя, яке сповільнює рух
+        this.vx *= this.friction;
+        this.vy *= this.friction;
+
+        // Переміщення фігури
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Перевірка на межі вікна і відскоки
+        if (this.x + this.width > window.innerWidth) {
+          this.x = window.innerWidth - this.width;
+          this.vx *= -this.elasticity;  // Відскок від правої стіни
+        }
+        if (this.x < 0) {
+          this.x = 0;
+          this.vx *= -this.elasticity;  // Відскок від лівої стіни
+        }
+
+        if (this.y + this.height > window.innerHeight) {
+          this.y = window.innerHeight - this.height;
+          this.vy *= -this.elasticity;  // Відскок від нижньої стіни
+        }
+        if (this.y < 0) {
+          this.y = 0;
+          this.vy *= -this.elasticity;  // Відскок від верхньої стіни
+        }
+
+        this.updatePosition();
+      }
+
+      // Переміщення фігури
+      move(dx, dy) {
+        this.x += dx;
+        this.y += dy;
+        this.updatePosition();
+      }
+
+      // Реалізація колізій між об'єктами
+      checkCollision(other) {
+        const dx = this.x - other.x;
+        const dy = this.y - other.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const minDistance = (this.width + other.width) / 2;
+
+        if (distance < minDistance) {
+          // Визначення напрямку і відстані
+          const angle = Math.atan2(dy, dx);
+          const targetX = this.x + Math.cos(angle) * minDistance;
+          const targetY = this.y + Math.sin(angle) * minDistance;
+
+          // Переміщуємо фігури, щоб вони більше не перекривалися
+          const ax = (targetX - this.x) * 0.5;
+          const ay = (targetY - this.y) * 0.5;
+          this.x += ax;
+          this.y += ay;
+
+          other.x -= ax;
+          other.y -= ay;
+
+          // Обчислення нових швидкостей після колізії
+          const normalX = dx / distance;
+          const normalY = dy / distance;
+          const relativeVelocityX = this.vx - other.vx;
+          const relativeVelocityY = this.vy - other.vy;
+
+          const speed = relativeVelocityX * normalX + relativeVelocityY * normalY;
+
+          if (speed > 0) {
+            // Відскок, враховуючи масу
+            const impulse = 2 * speed / (this.mass + other.mass);
+            this.vx -= impulse * other.mass * normalX;
+            this.vy -= impulse * other.mass * normalY;
+            other.vx += impulse * this.mass * normalX;
+            other.vy += impulse * this.mass * normalY;
+          }
+        }
+      }
+    }
+
+    // Створення об'єктів фігур
+    const rectangle = new DraggableObject(document.querySelector('.draggable-rectangle'), 2);
+    const circle = new DraggableObject(document.querySelector('.draggable-circle'), 1);
+    const triangle = new DraggableObject(document.querySelector('.draggable-triangle'), 1.5);
+
+    // Переміщення фігур за допомогою миші
+    function dragStart(e, obj) {
+      let offsetX = e.clientX - obj.x;
+      let offsetY = e.clientY - obj.y;
+
+      function dragging(e) {
+        obj.x = e.clientX - offsetX;
+        obj.y = e.clientY - offsetY;
+        obj.updatePosition();
+      }
+
+      function dragEnd() {
+        document.removeEventListener('mousemove', dragging);
+        document.removeEventListener('mouseup', dragEnd);
+      }
+
+      document.addEventListener('mousemove', dragging);
+      document.addEventListener('mouseup', dragEnd);
+    }
+
+    // Додаємо обробники подій для фігур
+    document.querySelector('.draggable-rectangle').addEventListener('mousedown', (e) => dragStart(e, rectangle));
+    document.querySelector('.draggable-circle').addEventListener('mousedown', (e) => dragStart(e, circle));
+    document.querySelector('.draggable-triangle').addEventListener('mousedown', (e) => dragStart(e, triangle));
+
+    // Анімація
+    function animate() {
+      rectangle.applyPhysics();
+      circle.applyPhysics();
+      triangle.applyPhysics();
+
+      // Перевірка на колізії
+      rectangle.checkCollision(circle);
+      rectangle.checkCollision(triangle);
+      circle.checkCollision(triangle);
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();  // Починаємо анімацію
+  </script>
+
+</body>
+</html>
